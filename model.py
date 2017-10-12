@@ -36,7 +36,6 @@ def avg_pool(x, ksize=(2, 2), stride=(2, 2)):
 def convolutional_layers():
     """
     Get the convolutional layers of the model.
-
     """
 
     inputs = tf.placeholder(tf.float32, [None, None, common.OUTPUT_SHAPE[0]])
@@ -71,15 +70,20 @@ def convolutional_layers():
     features = tf.nn.relu(tf.matmul(conv_layer_flat, W_fc1) + b_fc1)
     shape = tf.shape(features)
     features = tf.reshape(features, [shape[0], common.OUTPUT_SHAPE[1], 1])  # batchsize * outputshape * 1
-    return features
+    return inputs, features
+
+
+def lstm_cell():
+    return tf.contrib.rnn.LSTMCell(common.num_hidden)
 
 
 def get_train_model():
     # Has size [batch_size, max_stepsize, num_features], but the
     # batch_size and max_stepsize can vary along each step
-    #features = convolutional_layers()
-    #print features.get_shape()
-    inputs = tf.placeholder(tf.float32, [None, None, common.OUTPUT_SHAPE[0]])
+    inputs, features = convolutional_layers()
+    # print features.get_shape()
+
+    # inputs = tf.placeholder(tf.float32, [None, None, common.OUTPUT_SHAPE[0]])
 
     # Here we use sparse_placeholder that will generate a
     # SparseTensor required by ctc_loss op.
@@ -92,16 +96,16 @@ def get_train_model():
     # Can be:
     #   tf.nn.rnn_cell.RNNCell
     #   tf.nn.rnn_cell.GRUCell
-    cell = tf.contrib.rnn.core_rnn_cell.LSTMCell(common.num_hidden, state_is_tuple=True)
+    # cell = tf.contrib.rnn.LSTMCell(common.num_hidden, state_is_tuple=True)
 
     # Stacking rnn cells
-    stack = tf.contrib.rnn.core_rnn_cell.MultiRNNCell([cell] * common.num_layers,
+    stack = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(0, common.num_layers)],
                                         state_is_tuple=True)
 
     # The second output is the last state and we will no use that
-    outputs, _ = tf.nn.dynamic_rnn(cell, inputs, seq_len, dtype=tf.float32)
+    outputs, _ = tf.nn.dynamic_rnn(stack, features, seq_len, dtype=tf.float32)
 
-    shape = tf.shape(inputs)
+    shape = tf.shape(features)
     batch_s, max_timesteps = shape[0], shape[1]
 
     # Reshaping to apply the same weights over the timesteps

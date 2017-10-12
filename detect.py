@@ -53,6 +53,6 @@ def detect(test_inputs, test_targets, test_seq_len):
 
 if __name__ == '__main__':
     test_inputs, test_targets, test_seq_len = utils.get_data_set('small_test')
-    print test_inputs[0].shape
-    print detect(test_inputs, test_targets, test_seq_len)
+    print(test_inputs[0].shape)
+    print(detect(test_inputs, test_targets, test_seq_len))
    # print_tensors_in_checkpoint_file("model/ocr.model.50", None)

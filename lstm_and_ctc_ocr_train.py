@@ -16,7 +16,8 @@ from utils import decode_sparse_tensor
 
 # Some configs
 # Accounting the 0th indice +  space + blank label = 28 characters
-num_classes = ord('9') - ord('0') + 1 + 1 + 1
+# num_classes = ord('9') - ord('0') + 1 + 1 + 1
+num_classes = common.num_classes
 print("num_classes", num_classes)
 # Hyper-parameters
 num_epochs = 10000
@@ -59,7 +60,7 @@ def train():
                                                staircase=True)
     logits, inputs, targets, seq_len, W, b = model.get_train_model()
 
-    loss = tf.nn.ctc_loss( targets, logits, seq_len)
+    loss = tf.nn.ctc_loss(targets, logits, seq_len)
     cost = tf.reduce_mean(loss)
 
     optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
@@ -89,25 +90,27 @@ def train():
         if steps > 0 and steps % common.REPORT_STEPS == 0:
             do_report()
             save_path = saver.save(session, "models/ocr.model", global_step=steps)
-            # print(save_path)
+            #print(save_path)
         return b_cost, steps
 
-    with tf.Session() as session:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as session:
         session.run(init)
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=100)
-        for curr_epoch in xrange(num_epochs):
+        for curr_epoch in range(num_epochs):
             # variables = tf.all_variables()
             # for i in variables:
             #     print(i.name)
 
             print("Epoch.......", curr_epoch)
             train_cost = train_ler = 0
-            for batch in xrange(common.BATCHES):
+            for batch in range(common.BATCHES):
                 start = time.time()
                 train_inputs, train_targets, train_seq_len = utils.get_data_set('train', batch * common.BATCH_SIZE,
                                                                                 (batch + 1) * common.BATCH_SIZE)
 
-                print("get data time", time.time() - start)
+                #print("get data time", time.time() - start)
                 start = time.time()
                 c, steps = do_batch()
                 train_cost += c * common.BATCH_SIZE
@@ -116,7 +119,6 @@ def train():
 
             train_cost /= common.TRAIN_SIZE
             # train_ler /= common.TRAIN_SIZE
-
             val_feed = {inputs: train_inputs,
                         targets: train_targets,
                         seq_len: train_seq_len}

@@ -32,7 +32,8 @@ import numpy as np
 import time
 
 SPACE_INDEX = 0
-FIRST_INDEX = ord('0') - 1  # 0 is reserved to space
+# FIRST_INDEX = ord('0') - 1  # 0 is reserved to space
+FIRST_INDEX = 1  # 0 is reserved to space
 
 SPACE_TOKEN = '<space>'
 
@@ -40,42 +41,43 @@ __all__ = (
     'DIGITS',
     'sigmoid',
     'softmax',
+    'CHARS'
 )
 
-OUTPUT_SHAPE = (64, 256)
 
 DIGITS = "0123456789"
-# LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+CHARS = list(DIGITS + LETTERS)
 
-CHARS = DIGITS
-LENGTH = 16
-LENGTHS = [16, 20] # the number of digits varies from LENGTHS[0] to LENGTHS[1] in a image
-TEST_SIZE = 200
-ADD_BLANK = True   # if add a blank between digits
+LENGTHS = [6, 6]  # the number of digits varies from LENGTHS[0] to LENGTHS[1] in a image
+TEST_SIZE = 100
+ADD_BLANK = True  # if add a blank between digits
 LEARNING_RATE_DECAY_FACTOR = 0.9  # The learning rate decay factor
 INITIAL_LEARNING_RATE = 1e-3
 DECAY_STEPS = 5000
 
 # parameters for bdlstm ctc
 BATCH_SIZE = 64
-BATCHES = 10
+BATCHES = 100
+
+OUTPUT_SHAPE = (BATCH_SIZE, 256)
 
 TRAIN_SIZE = BATCH_SIZE * BATCHES
 
 MOMENTUM = 0.9
-REPORT_STEPS = 100
+REPORT_STEPS = 1000
 
 # Hyper-parameters
-num_epochs = 200
-num_hidden = 64
-num_layers = 1
+num_epochs = 2000
+num_hidden = 128
+num_layers = 2
 
 # Some configs
 # Accounting the 0th indice +  space + blank label = 28 characters
 # num_classes = ord('9') - ord('0') + 1 + 1 + 1
-num_classes = len(DIGITS) + 1 + 1  # 10 digits + blank + ctc blank
-print num_classes
+num_classes = len(CHARS) + 1 + 1  # 10 digits + blank + ctc blank
+print(num_classes)
 
 
 def softmax(a):
@@ -96,8 +98,8 @@ data_set = {}
 def load_data_set(dirname):
     fname_list = glob.glob(dirname + "/*.png")
     result = dict()
+    print("loading", dirname)
     for fname in sorted(fname_list):
-        print "loading", fname
         im = cv2.imread(fname)[:, :, 0].astype(numpy.float32) / 255.
         code = list(fname.split("/")[1].split("_")[1])
         index = fname.split("/")[1].split("_")[0]
@@ -108,7 +110,7 @@ def load_data_set(dirname):
 def read_data_for_lstm_ctc(dirname, start_index=None, end_index=None):
     start = time.time()
     fname_list = []
-    if not data_set.has_key(dirname):
+    if dirname not in data_set.keys():
         load_data_set(dirname)
 
     if start_index is None:
@@ -127,12 +129,16 @@ def read_data_for_lstm_ctc(dirname, start_index=None, end_index=None):
         # im = cv2.imread(fname)[:, :, 0].astype(numpy.float32) / 255.
         # code = list(fname.split("/")[1].split("_")[1])
         im, code = dir_data_set.get(fname)
-        yield im, numpy.asarray([SPACE_INDEX if x == SPACE_TOKEN else (ord(x) - FIRST_INDEX) for x in list(code)])
+        yield im, numpy.asarray(
+            [SPACE_INDEX if x == SPACE_TOKEN else (CHARS.index(x) + FIRST_INDEX) for x in list(code)])
         # print("get time ", time.time() - start)
 
 
+#        print numpy.asarray([SPACE_INDEX if x == SPACE_TOKEN else (CHARS.index(x) + FIRST_INDEX) for x in list(code)])
+
+
 def convert_original_code_train_code(code):
-    return numpy.asarray([SPACE_INDEX if x == SPACE_TOKEN else (ord(x) - FIRST_INDEX) for x in code])
+    return numpy.asarray([SPACE_INDEX if x == SPACE_TOKEN else (CHARS.index(x) - FIRST_INDEX) for x in code])
 
 
 def unzip(b):
@@ -144,9 +150,9 @@ def unzip(b):
 
 if __name__ == '__main__':
     train_inputs, train_codes = unzip(list(read_data_for_lstm_ctc("test"))[:2])
-    print train_inputs.shape
-    print train_codes
+    print(train_inputs.shape)
+    print(train_codes)
     print("train_codes", train_codes)
     targets = np.asarray(train_codes).flat[:]
-    print targets
-    print list(read_data_for_lstm_ctc("test", 0, 10))
+    print(targets)
+    print(list(read_data_for_lstm_ctc("test", 0, 10)))

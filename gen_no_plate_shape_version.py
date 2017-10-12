@@ -50,8 +50,8 @@ fonts = ["fonts/Farrington-7B-Qiqi.ttf", "fonts/Arial.ttf", "fonts/times.ttf"]
 # fonts = ["fonts/times.ttf"]
 FONT_HEIGHT = 32  # Pixel size to which the chars are resized
 
-CHARS = common.CHARS + " "
-
+CHARS=common.CHARS[:]
+CHARS.append(" ")
 
 def make_char_ims(output_height, font):
     font_size = output_height * 4
@@ -292,5 +292,5 @@ if __name__ == "__main__":
         im_gen = generate_ims(size.get(dir_name))
         for img_idx, (im, c, p) in enumerate(im_gen):
             fname = dir_name + "/{:08d}_{}_{}.png".format(img_idx, c, "1" if p else "0")
-            print '\'' + fname + '\','
+            print('\'' + fname + '\',')
             cv2.imwrite(fname, im * 255.)
