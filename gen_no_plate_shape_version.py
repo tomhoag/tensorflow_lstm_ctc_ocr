@@ -284,8 +284,10 @@ def generate_ims(num_images):
 
 
 if __name__ == "__main__":
-    dirs = ["test", "train"]
-    size = {"test": common.TEST_SIZE, "train": common.TRAIN_SIZE}
+    # dirs = ["test", "train"]
+    # size = {"test": common.TEST_SIZE, "train": common.TRAIN_SIZE}
+    dirs = ["sample"]
+    size = {"sample":10}
     for dir_name in dirs:
         if not os.path.exists(dir_name):
             os.mkdir(dir_name)
@@ -294,3 +296,6 @@ if __name__ == "__main__":
             fname = dir_name + "/{:08d}_{}_{}.png".format(img_idx, c, "1" if p else "0")
             print('\'' + fname + '\',')
             cv2.imwrite(fname, im * 255.)
+
+            cv2.imshow('plates', im)
+            cv2.waitKey(0)
